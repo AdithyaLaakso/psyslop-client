@@ -142,6 +142,22 @@ function getChannelColor(num: number): string {
   return colors[num % colors.length];
 }
 
+function getChannelTextColor(num: number): string {
+  const bgColor = getChannelColor(num);
+  return getContrastingTextColor(bgColor);
+}
+
+function getContrastingTextColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  // Relative luminance (WCAG)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  return luminance > 0.6 ? '#000000' : '#ffffff';
+}
+
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -186,7 +202,7 @@ $: numTimeSlots = timeBlocks?.length || 0;
 <div class="tv-guide">
   <!-- Header -->
   <div class="header">
-    <div class="logo">SLOP GUIDE</div>
+    <div class="logo">PSYSLOP S.L.O.P INDUSTRIES</div>
     <div class="date">LIVE NOW • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()}</div>
   </div>
 
@@ -245,24 +261,24 @@ $: numTimeSlots = timeBlocks?.length || 0;
               <div class="col-channel channel-num">{row.channel.number}</div>
               <div class="col-network">
                 <span class="network-badge" style="background-color: {getChannelColor(row.channel.number)}">
-                  {row.channel.name.split(':')[0]}
+                  <p style="color: {getChannelTextColor(row.channel.number)}">
+                    {row.channel.name.split(':')[0]}
+                  </p>
                 </span>
               </div>
 
               <!-- Time slot cells with programs -->
-              <div class="program-grid" style="grid-column: 3 / -1; display: grid; grid-template-columns: repeat({numTimeSlots}, 1fr); gap: 3px;">
-                {#each row.programs as program}
-                  {#if program.grid_column_start !== undefined && program.normalized_duration}
-                    <div
-                      class="program-block"
-                      style="grid-column: {program.grid_column_start + 1} / span {program.normalized_duration};"
-                    >
-                      <div class="program-title">{program.name}</div>
-                      <div class="program-time">{formatTime(program.start_time)} - {formatTime(program.end_time)}</div>
-                    </div>
-                  {/if}
-                {/each}
-              </div>
+              {#each row.programs as program}
+                {#if program.grid_column_start !== undefined && program.normalized_duration}
+                  <div
+                    class="program-block"
+                    style="grid-column: {program.grid_column_start + 3} / span {program.normalized_duration};"
+                  >
+                    <div class="program-title">{program.name}</div>
+                    <div class="program-time">{formatTime(program.start_time)} - {formatTime(program.end_time)}</div>
+                  </div>
+                {/if}
+              {/each}
             </div>
 
             {#if selectedChannel === row.channel.number}
@@ -520,17 +536,11 @@ $: numTimeSlots = timeBlocks?.length || 0;
   font-size: 11px;
   color: #000;
   text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.5);
+  text-color: white;
   max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.program-grid {
-  position: relative;
-  height: 100%;
-  min-height: 60px;
-  gap: 3px;
 }
 
 .program-block {
@@ -542,7 +552,8 @@ $: numTimeSlots = timeBlocks?.length || 0;
   flex-direction: column;
   justify-content: center;
   transition: all 0.2s;
-  height: 100%;
+  min-height: 60px;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .program-title {
